@@ -3,10 +3,19 @@ dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 require('dotenv').config();
 const express = require('express');
-const { MongoClient } = require('mongodb');
+// const { MongoClient } = require('mongodb');
+const cors = require('cors');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+mongoose.connect(process.env.MONGODB_URI);
+
+app.use(cors({
+    origin: 'https://geoprediobc.netlify.app/', // o la URL de tu frontend
+    methods: ['GET','POST']
+}));
 
 // Configuración de MongoDB
 const url = process.env.MONGODB_URI;
@@ -17,38 +26,37 @@ app.use(express.json());
 app.use(express.static('../frontend')); // Archivos estáticos
 
 // Endpoint para consultar por ID PREDIO
-app.get('/api/consultar/:codigo', async (req, res) => {
-    const client = new MongoClient(url);
-    const codigoBusqueda = req.params.codigo;
-
-    const codigoNumerico = parseInt(codigoBusqueda);
-
+app.get('/api/consultar_idpredio/:codigo', async (req, res) => {
     try {
+        const codigoBusqueda = req.params.codigo;
+        const codigoNumerico = parseInt(codigoBusqueda);
+        if (isNaN(codigoNumerico)) {
+            return res.status(400).json({
+ mensaje: "Código inválido"
+ });
+ }
         const db = client.db(dbName);
         const collection = db.collection(collectionName);
-
-        const query = { "properties.IDPREDIO": codigoNumerico };
-        console.log("Buscando con la query:", JSON.stringify(query));
-        
+        const query = {
+            "properties.IDPREDIO": codigoNumerico
+ };
+        console.log("Buscando:", query);
         const resultado = await collection.findOne(query);
-
-        if (resultado) {
-            console.log("Registro encontrado para:", codigoBusqueda);
-            res.json(resultado);
-        } else {
-            console.log("No se encontró ningún registro para el código:", codigoBusqueda);
-            res.status(404).send({ mensaje: "ID PREDIO no encontrado" });
-        }
-    } catch (error) {
+        if (!resultado) {
+            return res.status(404).json({
+                mensaje: "ID PREDIO no encontrado"
+ });
+ }
+        res.json(resultado);
+ } catch (error) {
         console.error("Error:", error);
-        res.status(500).send({
+        res.status(500).json({
             mensaje: "Error en el servidor",
-            error_detalle: error.message
-         });
-    } finally {
-        await client.close();
-    }
+            detalle: error.message
+ });
+ }
 });
+
 
 app.listen(PORT, () => {
     console.log(`Servidor GIS corriendo en http://localhost:${PORT}`);
