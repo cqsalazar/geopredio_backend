@@ -21,10 +21,12 @@ mongoose.connect(process.env.MONGODB_URI)
 // SCHEMA MONGOOSE
 // =============================
 
-const terrenoSchema = new mongoose.Schema({}, { strict: false });
+const terrenoSchema = new mongoose.Schema({}, {
+    strict: false,
+    collection: 'terrenos'
+});
 
-const Terreno = mongoose.model('terrenos', terrenoSchema);
-
+const Terreno = mongoose.model('Terreno', terrenoSchema);
 // =============================
 // MIDDLEWARE
 // =============================
@@ -62,6 +64,8 @@ const resultado = await Terreno.findOne({
 "properties.IDPREDIO": codigoNumerico
 });
 
+console.log("Resultado: ", resultado);
+
 if (!resultado) {
 
 return res.status(404).json({
@@ -84,8 +88,6 @@ detalle: error.message
 }
 
 });
-
-
 
 // =============================
 // INICIAR SERVIDOR
